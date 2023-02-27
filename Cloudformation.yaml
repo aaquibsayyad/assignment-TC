@@ -1,0 +1,172 @@
+
+Resources:
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      Tags:
+        - Key: Name
+          Value: MyVPC
+
+  MyPublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: "10.0.1.0/24"
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: MyPublicSubnet
+
+  MyInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: MyInternetGateway
+
+  MyGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MyVPC
+      InternetGatewayId: !Ref MyInternetGateway
+
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: MySecurityGroup
+      GroupDescription: My security group
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  MyEC2Instance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0c94855ba95c71c99 # Amazon Linux 2
+      InstanceType: t2.micro
+      KeyName: MyKeyPair
+      SubnetId: !Ref MyPublicSubnet
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install -y nodejs
+          sudo yum install -y npm
+          sudo echo "Hello World" > index.html
+          sudo nohup npx http-server &
+  MyEC2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0b5d2d6f8e297cbbd # Windows Server 2019 Base
+      InstanceType: t2.micro
+      KeyName: MyKeyPair
+      SubnetId: !Ref MyPublicSubnet
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          <powershell>
+          Add-WindowsFeature Web-Server
+          Set-Content -Path 'C:\inetpub\wwwroot\index.html' -Value 'Hello World'
+          </powershell>
+
+  MySecurityGroupEC2:
+    Type: AWS::EC
+Properties:
+  GroupName: MySecurityGroupEC2
+  GroupDescription: Security group for EC2 instances
+  VpcId: !Ref MyVPC
+  SecurityGroupIngress:
+    - IpProtocol: icmp
+      FromPort: -1
+      ToPort: -1
+      CidrIp: 0.0.0.0/0
+    - IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId: !Ref MySecurityGroupEC2
+    - IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !Ref MySecurityGroupEC2
+    - IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref MySecurityGroupEC2
+  SecurityGroupEgress:
+    - IpProtocol: -1
+      FromPort: 0
+      ToPort: 65535
+      CidrIp: 0.0.0.0/0
+
+MyIAMRole:
+Type: AWS::IAM::Role
+Properties:
+RoleName: MyIAMRole
+AssumeRolePolicyDocument:
+Version: "2012-10-17"
+Statement:
+- Effect: Allow
+Principal:
+Service:
+- ec2.amazonaws.com
+Action:
+- sts:AssumeRole
+ManagedPolicyArns:
+- arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+MyInstanceProfile:
+Type: AWS::IAM::InstanceProfile
+Properties:
+InstanceProfileName: MyInstanceProfile
+Roles:
+- !Ref MyIAMRole
+
+MyEC2Instance1:
+Type: AWS::EC2::Instance
+Properties:
+ImageId: ami-0c94855ba95c71c99 # Amazon Linux 2
+InstanceType: t2.micro
+KeyName: MyKeyPair
+SubnetId: !Ref MyPublicSubnet
+SecurityGroupIds:
+- !Ref MySecurityGroup
+- !Ref MySecurityGroupEC2
+UserData:
+Fn::Base64: !Sub |
+#!/bin/bash
+sudo yum update -y
+sudo yum install -y nodejs
+sudo yum install -y npm
+sudo echo "Hello World" > index.html
+sudo nohup npx http-server &
+IamInstanceProfile: !Ref MyInstanceProfile
+
+MyEC2Instance2:
+Type: AWS::EC2::Instance
+Properties:
+ImageId: ami-0b5d2d6f8e297cbbd # Windows Server 2019 Base
+InstanceType: t2.micro
+KeyName: MyKeyPair
+SubnetId: !Ref MyPublicSubnet
+SecurityGroupIds:
+- !Ref MySecurityGroup
+- !Ref MySecurityGroupEC2
+UserData:
+Fn::Base64: !Sub |
+<powershell>
+Add-WindowsFeature Web-Server
+Set-Content -Path 'C:\inetpub\wwwroot\index.html' -Value 'Hello World'
+</powershell>
+IamInstanceProfile: !Ref MyInstanceProfile
