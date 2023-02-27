@@ -51,7 +51,7 @@ Resources:
   MyEC2Instance1:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0c94855ba95c71c99 # Amazon Linux 2
+      ImageId: ami-0e742cca61fb65051 # Amazon Linux 2 AMI
       InstanceType: t2.micro
       KeyName: MyKeyPair
       SubnetId: !Ref MyPublicSubnet
@@ -65,10 +65,11 @@ Resources:
           sudo yum install -y npm
           sudo echo "Hello World" > index.html
           sudo nohup npx http-server &
+          
   MyEC2Instance2:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0b5d2d6f8e297cbbd # Windows Server 2019 Base
+      ImageId: ami-0bd3f43f107376d6b # Windows Server 2022 Base
       InstanceType: t2.micro
       KeyName: MyKeyPair
       SubnetId: !Ref MyPublicSubnet
